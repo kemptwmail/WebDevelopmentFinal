@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic Tac Toe Game</title>
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      background-color: #ffffff;
+      transition: background-color 0.5s ease-in-out;
+    }
+
+    h1 {
+      margin-top: 20px;
+      color: red;
+    }
+
+    #gameCanvas {
+      margin: 20px auto;
+      display: block;
+      border: 3px solid #000;
+      background-color: #f0f0f0;
+      cursor: pointer;
+    }
+
+    #status, #scores {
+      font-size: 20px;
+      color: red;
+      margin: 10px 0;
+    }
+
+    #restartBtn {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    #restartBtn:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>Play Tic Tac Toe!</h1>
+  <canvas id="gameCanvas" width="300" height="300"></canvas>
+  <p id="status">Player X's turn</p>
+  <p id="scores">X: 0 | O: 0</p>
+  <button id="restartBtn">Restart Game</button>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const status = document.getElementById("status");
+    const scoresDisplay = document.getElementById("scores");
+    const restartBtn = document.getElementById("restartBtn");
+
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "X";
+    let gameOver = false;
+    let scores = JSON.parse(localStorage.getItem("ticTacToeScores")) || { X: 0, O: 0, draws: 0 };
+
+    function drawBoard() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = 2;
+      for (let i = 1; i <= 2; i++) {
+        ctx.beginPath();
+        ctx.moveTo((canvas.width / 3) * i, 0);
+        ctx.lineTo((canvas.width / 3) * i, canvas.height);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, (canvas.height / 3) * i);
+        ctx.lineTo(canvas.width, (canvas.height / 3) * i);
+        ctx.stroke();
+      }
+      board.forEach((cell, index) => {
+        if (cell) {
+          const x = (index % 3) * 100 + 50;
+          const y = Math.floor(index / 3) * 100 + 60;
+          ctx.font = "48px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText(cell, x, y);
+        }
+      });
+    }
+    function checkWin() {
+      const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6],
+      ];
+      return winPatterns.find(pattern => {
+        const [a, b, c] = pattern;
+        return board[a] && board[a] === board[b] && board[a] === board[c];
+      });
+    }
+    function updateScoresDisplay() {
+      scoresDisplay.textContent = `X: ${scores.X} | O: ${scores.O} | draws: ${scores.draws}`;
+    }
+    function handleClick(event) {
+      if (gameOver || currentPlayer === "O") return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const col = Math.floor(x / 100);
+      const row = Math.floor(y / 100);
+      const index = row * 3 + col;
+  
+      if (board[index] === "") {
+        board[index] = currentPlayer;
+        drawBoard();
+        const winner = checkWin();
+      if (winner) {
+        status.textContent = `Player ${currentPlayer} wins!`;
+        scores[currentPlayer]++;
+        localStorage.setItem("ticTacToeScores", JSON.stringify(scores));
+        updateScoresDisplay();
+        gameOver = true;
+      } else if (!board.includes("")) {
+        status.textContent = "It's a draw!";
+        scores.draws++;
+        localStorage.setItem("ticTacToeScores", JSON.stringify(scores));
+    updateScoresDisplay();
+      gameOver = true;
+    } else {
+      currentPlayer = currentPlayer === "X" ? "O" : "X"; 
+      status.textContent = `Player ${currentPlayer}'s turn`;
+      if (currentPlayer === "O") {
+        setTimeout(cpuMove, 500); 
+      }
+    }
+  }
+}
+
+function cpuMove() {
+  if (gameOver) return;
+
+  const emptyIndices = board.map((value, index) => value === "" ? index : null).filter(val => val !== null);
+  const move = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+  board[move] = "O";
+  drawBoard();
+
+  const winner = checkWin();
+  if (winner) {
+    status.textContent = `Player ${currentPlayer} wins!`;
+    scores[currentPlayer]++;
+    localStorage.setItem("ticTacToeScores", JSON.stringify(scores));
+    updateScoresDisplay();
+    gameOver = true;
+  } else if (!board.includes("")) {
+    status.textContent = "It's a draw!";
+    gameOver = true;
+  } else {
+    currentPlayer = "X";
+    status.textContent = `Player ${currentPlayer}'s turn`;
+  }
+}
+
+
+    
+
+function restartGame() {
+  board = ["", "", "", "", "", "", "", "", ""];
+  currentPlayer = "X";
+  gameOver = false;
+  status.textContent = `Player ${currentPlayer}'s turn`;
+  drawBoard();
+}
+
+  canvas.addEventListener("click", handleClick);
+  restartBtn.addEventListener("click", restartGame);
+  drawBoard();
+  updateScoresDisplay();
+
+  const API_KEY = '404e4627c066a59031e72016ba6b4c8a';
+  navigator.geolocation.getCurrentPosition(position => {
+    const { latitude, longitude } = position.coords;
+      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${API_KEY}`)
+        .then(res => res.json())
+        .then(data => {
+          const weather = data.weather[0].main;
+          if (weather.includes("Rain")) {
+            document.body.style.backgroundImage = "url('rainy.jpg')";
+        } else if (weather.includes("Clear")) {
+            document.body.style.backgroundImage = "url('sunny.jpg')";
+        } else {
+            document.body.style.backgroundImage = "url('cloudy.jpg')";
+        }
+        document.body.style.backgroundSize = "cover";
+        })
+        .catch(err => console.error('Weather API Error:', err));
+    });
+  </script>
+</body>
+</html>
